@@ -1,2 +1,4 @@
 speechbrain
 webdataset
+kaldi_io
+more_itertools
