@@ -178,6 +178,8 @@ STREAM_FUNCS = {
 def make_data_point(outputs):
     data_point = {}
     for uttid, output in outputs:
+        # HACK: WebDataset cannot handle periods in uttids:
+        uttid = uttid.replace(".", "")
         if "__key__" not in data_point:
             data_point["__key__"] = uttid
         elif uttid != data_point["__key__"]:
