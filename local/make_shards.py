@@ -156,8 +156,11 @@ def feat_ali_chunks_to_output(featsscp_path, aliark_path, chunklen, subsampling,
                     feats[-1].unsqueeze(0).repeat_interleave(contextlen,dim=0)
                 )
         )
-        for i in range(padded_feats.shape[0] // chunklen):
-            feats_chunk = feats[i*chunklen:(i+1)*chunklen,:]
+        for i in range(ali.shape[0] // ali_chunklen):
+            feats_chunk = padded_feats[i*chunklen:(i+1)*chunklen+2*contextlen,:]
+            if feats_chunk.shape[0] != (chunklen + 2*contextlen):
+                # Skip chunks with bad boundary conditions :(
+                continue
             ali_chunk = ali[i*ali_chunklen:(i+1)*ali_chunklen]
             output = {'feats.pth': feats_chunk,
                     'ali.pth': ali_chunk}
