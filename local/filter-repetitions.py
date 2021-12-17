@@ -66,7 +66,7 @@ if __name__ == "__main__":
     modified_uttids = []
     for uttid, text in read_texts(args.textfile):
         filtered = filter_repetitions(text, args.max_repetitions)
-        print(uttid, filtered)
+        print(uttid, " ".join(filtered))
         if filtered != text:
             modified_uttids.append(uttid)
     if args.save_modified is not None:
