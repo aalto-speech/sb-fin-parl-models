@@ -15,6 +15,7 @@ import torch
 import numpy as np
 import locale
 import more_itertools
+import io
 
 
 def kaldi_map_stream(path):
@@ -32,6 +33,11 @@ def read_rxwav(data):
     if data.endswith("|"):
         with subprocess.Popen(data, shell=True, stdout=subprocess.PIPE) as proc:
             signal, samplerate = torchaudio.load(proc.stdout)
+    elif ":" in data:
+        fpath, offset = data.split(":")
+        with open(fpath, "rb") as fi:
+            fi.seek(int(offset))
+            signal, samplerate = torchaudio.load(fi)
     else:
         signal, samplerate = torchaudio.load(data)
     return signal.squeeze(0), samplerate

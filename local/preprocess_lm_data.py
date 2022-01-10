@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import unicodedata
+import re
+
+SPECIAL_MARK_MATCHER = re.compile("\.\w+")
+
 
 def normalize(line):
     # Remove special tokens:
+    line = line.replace("[oov]", "")
+    line = re.sub(SPECIAL_MARK_MATCHER, "", line)
     line = line.replace("<UNK>", "")
     line = line.replace("[spn]", "")
     line = line.replace("[spk]", "")

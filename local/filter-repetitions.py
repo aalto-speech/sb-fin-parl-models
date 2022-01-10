@@ -7,10 +7,16 @@ def read_texts(filepath):
             uttid, *text = line.strip().split()
             yield uttid, text
 
-def filter_repetitions(seq, max_repetitions):
+def filter_repetitions(seq, max_repetition_length):
     seq = list(seq)
     output = []
-    for n in range(1, len(seq)):
+    max_n = len(seq) // 2
+    for n in range(max_n, 0, -1):
+        max_repetitions = max(max_repetition_length // n, 1)
+        # Don't need to iterate over impossible n values:
+        # len(seq) can change a lot during iteration
+        if (len(seq) <= n*2) or (len(seq) <= max_repetition_length):
+            continue
         iterator = enumerate(seq)
         # Fill first buffers:
         buffers = [[next(iterator)[1]] for _ in range(n)]
@@ -51,21 +57,19 @@ def filter_repetitions(seq, max_repetitions):
             else:
                 seq.append(token)
         output = []
-        # Don't need to iterate over impossible n values:
-        if len(seq) < (max_repetitions+1)*(n+1):
-            break
     return seq
 
 if __name__ == "__main__":
     import argparse
+    import tqdm
     parser = argparse.ArgumentParser()
     parser.add_argument("textfile", type=pathlib.Path)
-    parser.add_argument("--max-repetitions", type=int, default=3)
+    parser.add_argument("--max-repetition-length", type=int, default=5)
     parser.add_argument("--save-modified", type=pathlib.Path, default=None)
     args = parser.parse_args()
     modified_uttids = []
-    for uttid, text in read_texts(args.textfile):
-        filtered = filter_repetitions(text, args.max_repetitions)
+    for uttid, text in tqdm.tqdm(read_texts(args.textfile)):
+        filtered = filter_repetitions(text, args.max_repetition_length)
         print(uttid, " ".join(filtered))
         if filtered != text:
             modified_uttids.append(uttid)

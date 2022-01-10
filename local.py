@@ -1,5 +1,8 @@
 import torch
 from speechbrain.dataio.batch import (default_convert, mod_default_collate, recursive_to, recursive_pin_memory)
+from speechbrain.lobes.models.transformer.Transformer import ( 
+        TransformerInterface,
+)
 
 class NoSchedule:
     def __init__(self, lr, **kwargs):
@@ -81,3 +84,20 @@ class Batch:
     @property
     def batchsize(self):
         return self.__length
+
+
+class TransformerAM(TransformerInterface):
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, num_decoder_layers=0, **kwargs)
+
+    def forward(self, x, src_key_padding_mask=None):
+        if self.causal:
+            attn_mask = get_lookahead_mask(x)
+        else:
+            attn_mask = None
+        encoder_output, _ = self.encoder(
+            src=x,
+            src_mask=attn_mask,
+            src_key_padding_mask=src_key_padding_mask,
+        )
+        return encoder_output

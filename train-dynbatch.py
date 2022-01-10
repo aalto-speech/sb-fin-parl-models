@@ -257,6 +257,11 @@ class ASR(sb.Brain):
             with open(self.hparams.wer_file, "w") as w:
                 self.wer_metric.write_stats(w)
 
+            if hasattr(self.hparams, "decode_text_file"):
+                with open(self.hparams.decode_text_file, "w") as fo:
+                    for utt_details in self.wer_metric.scores:
+                        print(utt_details["key"], " ".join(utt_details["hyp_tokens"]), file=fo)
+
     def on_evaluate_start(self, max_key=None, min_key=None):
         super().on_evaluate_start(max_key=max_key, min_key=min_key)
         if getattr(self.hparams, "avg_ckpts", 1) > 1:
@@ -292,6 +297,8 @@ def dataio_prepare(hparams):
 
     def tokenize(sample):
         text = sample["trn"]
+        # quick hack for one sample in text of test2021:
+        text = text.replace(" <NOISE>", "")
         fulltokens = torch.LongTensor(
                 [hparams["bos_index"]] + hparams["tokenizer"].encode(text) + [hparams["eos_index"]]
         )
@@ -344,8 +351,66 @@ def dataio_prepare(hparams):
                 partial=True
             )
     )
+    test2021 = (
+            wds.WebDataset(hparams["test_2021_shards"])
+            .decode()
+            .rename(trn="transcript.txt", wav="audio.pth")
+            .map(tokenize)
+            .batched(
+                batchsize=hparams["validbatchsize"], 
+                collation_fn=sb.dataio.batch.PaddedBatch,
+                partial=True
+            )
+    )
 
-    return {"train": traindata, "valid": validdata, "test-seen": testseen, "test-unseen": testunseen}
+    test_speecon = (
+            wds.WebDataset(hparams["test_speecon_shards"])
+            .decode()
+            .rename(trn="transcript.txt", wav="audio.pth", meta="meta.json")
+            .map(tokenize)
+            .batched(
+                batchsize=hparams["validbatchsize"], 
+                collation_fn=sb.dataio.batch.PaddedBatch,
+                partial=True
+            )
+    )
+
+    test_yle = (
+            wds.WebDataset(hparams["test_yle_shards"])
+            .decode()
+            .rename(trn="transcript.txt", wav="audio.pth", meta="meta.json")
+            .map(tokenize)
+            .batched(
+                batchsize=hparams["validbatchsize"], 
+                collation_fn=sb.dataio.batch.PaddedBatch,
+                partial=True
+            )
+    )
+
+    normalizer = sb.dataio.preprocess.AudioNormalizer()
+    def normalize_audio(sample):
+        signal = sample["wav"]
+        samplerate = sample["meta"]["samplerate"]
+        sample["wav"] = normalizer(signal, samplerate)
+        sample["meta"]["samplerate"] = normalizer.sample_rate 
+        return sample
+
+    test_lp= (
+            wds.WebDataset(hparams["test_lp_shards"])
+            .decode()
+            .rename(trn="transcript.txt", wav="audio.pth", meta="meta.json")
+            .map(tokenize)
+            .map(normalize_audio)
+            .batched(
+                batchsize=hparams["validbatchsize"], 
+                collation_fn=sb.dataio.batch.PaddedBatch,
+                partial=True
+            )
+    )
+    return {"train": traindata, "valid": validdata, "test-seen": testseen,
+            "test-unseen": testunseen, "test2021": test2021,
+            "test-speecon": test_speecon, "test-yle": test_yle,
+            "test-lp": test_lp}
 
 
 
