@@ -173,6 +173,11 @@ class ASR(sb.Brain):
 
         if stage != sb.Stage.TRAIN:
             # Converted predicted tokens from indexes to words
+            specials = [self.hparams.bos_index, self.hparams.eos_index, self.hparams.unk_index]
+            predictions["tokens"] = [
+                    [token for token in pred if token not in specials]
+                    for pred in predictions["tokens"]
+            ]
             predicted_words = [
                 self.hparams.tokenizer.decode_ids(prediction).split(" ")
                 for prediction in predictions["tokens"]

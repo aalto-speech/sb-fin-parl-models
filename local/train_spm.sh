@@ -3,8 +3,10 @@
 # Requires SentencePiece commandline tools
 
 cmd="srun --mem 2G --time 0:30:0"
+unk=0
 bos=-1
 eos=-1
+pad=-1
 
 . local/parse_options.sh
 
@@ -24,8 +26,7 @@ $cmd spm_train --input="$1" \
   --vocab_size="$num_units" \
   --character_coverage=1.0 \
   --model_type="bpe" \
-  --unk_id=0 \
+  --unk_id=$unk \
   --bos_id=$bos \
   --eos_id=$eos \
-  --pad_id=-1
-
+  --pad_id=$pad
